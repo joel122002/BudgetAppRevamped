@@ -24,7 +24,6 @@ import java.time.Instant
 import java.util.Date
 
 val TAG = "BudgetItemViewModel"
-@RequiresApi(Build.VERSION_CODES.O)
 class BudgetItemViewModel(application: Application): AndroidViewModel(application) {
     private val budgetItemRepository: BudgetItemRepository
     private val _budgetItems = MutableStateFlow<List<BudgetItem>>(emptyList())

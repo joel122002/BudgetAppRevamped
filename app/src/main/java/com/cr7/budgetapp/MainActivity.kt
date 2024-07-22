@@ -84,7 +84,6 @@ val TAG = "MainActivity"
 
 class MainActivity : ComponentActivity() {
     @ExperimentalMaterial3Api
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val budgetItemViewModel = BudgetItemViewModel(application)

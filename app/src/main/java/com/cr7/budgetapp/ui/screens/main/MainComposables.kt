@@ -52,13 +52,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cr7.budgetapp.R
 import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.data.remote.FirebaseAuthenticatedUser
 import com.cr7.budgetapp.ui.theme.BudgetAppTheme
@@ -451,6 +454,12 @@ fun AppBar(content: @Composable() (innerPadding: PaddingValues) -> Unit) {
                     Text("Budget App")
                 },
                 actions = {
+                    IconButton(onClick = {  }) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(id = R.drawable.ic_calculator),
+                            contentDescription = "Localized description"
+                        )
+                    }
                     IconButton(onClick = { dropdownOpen = !dropdownOpen }) {
                         Icon(
                             imageVector = Icons.Filled.Menu,

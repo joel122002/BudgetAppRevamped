@@ -29,8 +29,8 @@ interface BudgetItemDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertMany(budgetItems: List<BudgetItem>)
 
-    @Query("DELETE FROM budget WHERE uid NOT IN (:uids) AND sync=1")
-    suspend fun deleteRecordsNotInFirebase(uids: List<String>)
+    @Query("DELETE FROM budget WHERE uid NOT IN (:uids) AND sync=1 AND date BETWEEN :start AND :end")
+    suspend fun deleteRecordsNotInFirebase(uids: List<String>, start: Date, end: Date)
 
     @Update
     fun update(budgetItem: BudgetItem)

@@ -1,6 +1,5 @@
 package com.cr7.budgetapp.data
 
-import androidx.lifecycle.LiveData
 import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.data.local.BudgetItemDao
 import com.cr7.budgetapp.data.remote.FirebaseService
@@ -43,7 +42,7 @@ class BudgetItemRepository(
 
         withContext(Dispatchers.IO) {
             budgetItemDao.insertMany(insertOrUpdateItems)
-            budgetItemDao.deleteRecordsNotInFirebase(ids)
+            budgetItemDao.deleteRecordsNotInFirebase(ids, start, end)
             val unsyncedItems = budgetItemDao.getUnsyncedItems()
             unsyncedItems.forEach { budgetItem ->
                 budgetItem.sync = true

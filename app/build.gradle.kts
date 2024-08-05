@@ -5,6 +5,7 @@ plugins {
     // My dependencies
     id("com.google.gms.google-services")
     id("com.google.devtools.ksp")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -106,4 +107,15 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
     // ViewModel utilities for Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")
+
+    val nav_version = "2.7.7"
+    // Kotlin
+    implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
+    implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
+
+    // Jetpack Compose Integration
+    implementation("androidx.navigation:navigation-compose:$nav_version")
+
+    // Serialization library
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.1")
 }

@@ -64,6 +64,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cr7.budgetapp.R
 import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.data.remote.FirebaseAuthenticatedUser
+import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
+import com.cr7.budgetapp.ui.screens.helpers.Routes
 import com.cr7.budgetapp.ui.theme.BudgetAppTheme
 import com.cr7.budgetapp.ui.viewmodel.BudgetItemViewModel
 import com.google.firebase.Firebase
@@ -443,6 +445,7 @@ fun AppBar(content: @Composable() (innerPadding: PaddingValues) -> Unit) {
     var dropdownOpen by remember {
         mutableStateOf(false)
     }
+    val navController = LocalNavController.current
     Scaffold(
         topBar = {
             TopAppBar(
@@ -454,7 +457,7 @@ fun AppBar(content: @Composable() (innerPadding: PaddingValues) -> Unit) {
                     Text("Budget App")
                 },
                 actions = {
-                    IconButton(onClick = {  }) {
+                    IconButton(onClick = { navController.navigate(Routes.calculate.route) }) {
                         Icon(
                             imageVector = ImageVector.vectorResource(id = R.drawable.ic_calculator),
                             contentDescription = "Localized description"

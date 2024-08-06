@@ -6,6 +6,7 @@ import com.cr7.budgetapp.data.local.User
 import com.cr7.budgetapp.data.remote.FirebaseAuthenticatedUser
 import com.cr7.budgetapp.data.remote.FirebaseService
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,9 @@ class AuthViewModel: ViewModel() {
         }
     }
 
+    fun getUserDocumentRef(): DocumentReference {
+        return firebaseService.getUserDocumentRefernce()
+    }
     fun signInWithGoogle(idToken: String) {
         FirebaseAuthenticatedUser.signInWithGoogle(idToken)
     }

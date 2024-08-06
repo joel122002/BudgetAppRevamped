@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cr7.budgetapp.ui.screens.DetailsScreen
 import com.cr7.budgetapp.ui.screens.calculate.CalculateScreen
+import com.cr7.budgetapp.ui.screens.helpers.LocalApplication
 import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
 import com.cr7.budgetapp.ui.screens.helpers.Routes
 import com.cr7.budgetapp.ui.screens.signin.SignInScreen
@@ -43,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     DetailsScreen(authViewModel = authViewModel)
                 } else {
                     val navController = rememberNavController()
-                    CompositionLocalProvider(LocalNavController provides navController) {
+                    CompositionLocalProvider(LocalNavController provides navController, LocalApplication provides application) {
                         NavHost(
                             navController = navController,
                             startDestination = Routes.budget.route

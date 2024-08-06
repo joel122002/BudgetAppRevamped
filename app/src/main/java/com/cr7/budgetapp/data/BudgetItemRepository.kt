@@ -52,6 +52,12 @@ class BudgetItemRepository(
         }
     }
 
+    suspend fun fetchAllUserData(start: Date, end: Date): List<BudgetItem> {
+        // Server Items. Has all items that would exist in existingItems
+        val budgetItems = firebaseService.getAllBudgetItemsBetweenDate(start, end)
+        return budgetItems
+    }
+
     suspend fun insert(budgetItem: BudgetItem) {
         withContext(Dispatchers.IO) {
             budgetItemDao.insert(budgetItem)

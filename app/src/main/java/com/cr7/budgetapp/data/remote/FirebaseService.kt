@@ -4,6 +4,7 @@ import android.util.Log
 import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.data.local.User
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
@@ -40,6 +41,12 @@ class FirebaseService {
         val docRef = db.collection("users").document(user.uid)
         val document = docRef.get().await()
         return document
+    }
+
+    fun getUserDocumentRefernce(): DocumentReference {
+        val user = FirebaseAuthenticatedUser.firebaseUserState.value!!
+        val docRef = db.collection("users").document(user.uid)
+        return docRef
     }
 
     suspend fun setUserDocument(user: User): DocumentSnapshot {

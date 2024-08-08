@@ -1,6 +1,8 @@
 package com.cr7.budgetapp.ui.screens.main
 
 import android.app.Application
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +34,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
@@ -61,11 +65,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.cr7.budgetapp.R
 import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.data.remote.FirebaseAuthenticatedUser
 import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
 import com.cr7.budgetapp.ui.screens.helpers.Routes
+import com.cr7.budgetapp.ui.screens.laundry.LaundryScreen
 import com.cr7.budgetapp.ui.theme.BudgetAppTheme
 import com.cr7.budgetapp.ui.viewmodel.BudgetItemViewModel
 import com.google.firebase.Firebase
@@ -146,121 +155,116 @@ fun MainComposable(
         }
     }
 
-    BudgetAppTheme {
-        // A surface container using the 'background' color from the theme
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+    // A surface container using the 'background' color from the theme
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(PaddingValues(12.dp))
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            AppBar { innerPadding ->
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .padding(PaddingValues(12.dp))
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
 
-                    CustomDatePickerDialog(
-                        open = isDatePickerOpen,
-                        updateOpen = { open -> isDatePickerOpen = open },
-                        datePickerState = datePickerState
+            CustomDatePickerDialog(
+                open = isDatePickerOpen,
+                updateOpen = { open -> isDatePickerOpen = open },
+                datePickerState = datePickerState
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                FloatingActionButton(onClick = {
+                    isDatePickerOpen = true
+                }) {
+                    Icon(
+                        imageVector = Icons.Outlined.DateRange,
+                        contentDescription = "Date Picker"
                     )
+                }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                Text(
+                    text = SimpleDateFormat("dd MMMM yyyy (EEEE)").format(
+                        Date(selectedDateMills)
+                    )
+                )
 
-                        FloatingActionButton(onClick = {
-                            isDatePickerOpen = true
-                        }) {
-                            Icon(
-                                imageVector = Icons.Outlined.DateRange,
-                                contentDescription = "Date Picker"
-                            )
-                        }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                Text(
+                    text = "Total: $totalPrice"
+                )
 
-                        Text(
-                            text = SimpleDateFormat("dd MMMM yyyy (EEEE)").format(
-                                Date(selectedDateMills)
-                            )
-                        )
-
+            }
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    coroutineScope.launch {
+                        isRefreshing = true
+                        budgetItemViewModel.refreshData()
+                        isRefreshing = false
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Text(
-                            text = "Total: $totalPrice"
-                        )
+                },
+                modifier = Modifier
+                    .weight(1f, true)
+                    .fillMaxWidth(),
+            ) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(budgetItems) { budgetItem ->
 
-                    }
-                    PullToRefreshBox(
-                        isRefreshing = isRefreshing,
-                        onRefresh = {
-                            coroutineScope.launch {
-                                isRefreshing = true
-                                budgetItemViewModel.refreshData()
-                                isRefreshing = false
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(1f, true)
-                            .fillMaxWidth(),
-                    ) {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(budgetItems) { budgetItem ->
+                        val dateMills = budgetItem.date.toInstant().toEpochMilli()
+                        if (dateMills >= selectedDateMills && dateMills < (selectedDateMills + 86400000)) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(modifier = Modifier.fillMaxWidth(0.5f)) {
+                                    Text(text = budgetItem.name)
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    Text(text = "${budgetItem.price}")
+                                }
 
-                                val dateMills = budgetItem.date.toInstant().toEpochMilli()
-                                if (dateMills >= selectedDateMills && dateMills < (selectedDateMills + 86400000)) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(modifier = Modifier.fillMaxWidth(0.5f)) {
-                                            Text(text = budgetItem.name)
-                                        }
-                                        Box(modifier = Modifier.weight(1f)) {
-                                            Text(text = "${budgetItem.price}")
-                                        }
-
-                                        Button(onClick = { updatedItem = budgetItem }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Edit,
-                                                contentDescription = "Edit item"
-                                            )
-                                        }
-                                    }
+                                Button(onClick = { updatedItem = budgetItem }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit item"
+                                    )
                                 }
                             }
                         }
                     }
-
-                    if (updatedItem != null) {
-                        EditItemDialog(
-                            updatedItem!!,
-                            onDismissRequest = { updatedItem = null },
-                            onConfirmation = { budgetItem ->
-
-                                budgetItemViewModel.insert(budgetItem = budgetItem)
-                                updatedItem = null
-                            })
-                    }
-
-                    NewItemForm(
-                        budgetItemViewModel = budgetItemViewModel,
-                        datePickerState = datePickerState,
-                    )
                 }
             }
+
+            if (updatedItem != null) {
+                EditItemDialog(
+                    updatedItem!!,
+                    onDismissRequest = { updatedItem = null },
+                    onConfirmation = { budgetItem ->
+
+                        budgetItemViewModel.insert(budgetItem = budgetItem)
+                        updatedItem = null
+                    })
+            }
+
+            NewItemForm(
+                budgetItemViewModel = budgetItemViewModel,
+                datePickerState = datePickerState,
+            )
         }
     }
 }
@@ -329,7 +333,8 @@ fun NewItemForm(
 
 
         FloatingActionButton(onClick = {
-            val userDocRef = Firebase.firestore.collection("users").document(Firebase.auth.currentUser?.uid!!)
+            val userDocRef =
+                Firebase.firestore.collection("users").document(Firebase.auth.currentUser?.uid!!)
             val budgetItem = BudgetItem(
                 createdAt = Date(),
                 updatedAt = Date(),
@@ -441,47 +446,171 @@ fun EditItemDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppBar(content: @Composable() (innerPadding: PaddingValues) -> Unit) {
+fun AppBar(
+    application: Application,
+    lifecycleScope: LifecycleCoroutineScope
+) {
     var dropdownOpen by remember {
         mutableStateOf(false)
     }
+    var screen by remember {
+        mutableStateOf(Routes.budget.route)
+    }
     val navController = LocalNavController.current
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                title = {
-                    Text("Budget App")
+    val navControllerLocal = rememberNavController()
+    BudgetAppTheme {
+        // A surface container using the 'background' color from the theme
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            titleContentColor = MaterialTheme.colorScheme.primary,
+                        ),
+                        title = {
+                            Text("Budget App")
+                        },
+                        actions = {
+                            IconButton(onClick = { navController.navigate(Routes.calculate.route) }) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_calculator),
+                                    contentDescription = "Localized description"
+                                )
+                            }
+                            IconButton(onClick = { dropdownOpen = !dropdownOpen }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Menu,
+                                    contentDescription = "Localized description"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = dropdownOpen,
+                                onDismissRequest = { dropdownOpen = false },
+                            ) {
+                                DropdownMenuItem(onClick = {
+                                    FirebaseAuthenticatedUser.signOut()
+                                    dropdownOpen = false
+                                }, text = { Text(text = "Logout") })
+                            }
+                        },
+                    )
                 },
-                actions = {
-                    IconButton(onClick = { navController.navigate(Routes.calculate.route) }) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(id = R.drawable.ic_calculator),
-                            contentDescription = "Localized description"
+                bottomBar = {
+                    NavigationBar {
+                        //getting the list of bottom navigation items for our data class
+
+                        //iterating all items with their respective indexes
+                        NavigationBarItem(
+                            selected = screen == Routes.budget.route,
+                            label = {
+                                Text("Budget")
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_wallet),
+                                    contentDescription = "Budget"
+                                )
+                            },
+                            onClick = {
+                                navControllerLocal.navigate(Routes.budget.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                                screen = Routes.budget.route
+                            }
+                        )
+                        NavigationBarItem(
+                            selected = screen == Routes.laundry.route,
+                            label = {
+                                Text("Laundry")
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_laundry),
+                                    contentDescription = "Laundry"
+                                )
+                            },
+                            onClick = {
+                                navControllerLocal.navigate(Routes.laundry.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                                screen = Routes.laundry.route
+                            }
                         )
                     }
-                    IconButton(onClick = { dropdownOpen = !dropdownOpen }) {
-                        Icon(
-                            imageVector = Icons.Filled.Menu,
-                            contentDescription = "Localized description"
+                }
+            ) { innerPadding ->
+
+                NavHost(
+                    navController = navControllerLocal,
+                    startDestination = Routes.budget.route,
+                    modifier = Modifier.padding(paddingValues = innerPadding)
+                ) {
+                    composable(Routes.budget.route, enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(300)
                         )
+                    },
+                        exitTransition = {
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(300)
+                            )
+                        },
+                        popEnterTransition = {
+                            slideIntoContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(300)
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(300)
+                            )
+                        }) {
+                        MainComposable(application = application, lifecycleScope = lifecycleScope)
                     }
-                    DropdownMenu(
-                        expanded = dropdownOpen,
-                        onDismissRequest = { dropdownOpen = false },
-                    ) {
-                        DropdownMenuItem(onClick = {
-                                                   FirebaseAuthenticatedUser.signOut()
-                            dropdownOpen = false
-                        }, text = {Text(text = "Logout")})
+                    composable(Routes.laundry.route, enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(300)
+                        )
+                    },
+                        exitTransition = {
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(300)
+                            )
+                        },
+                        popEnterTransition = {
+                            slideIntoContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(300)
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(300)
+                            )
+                        }) {
+                        LaundryScreen()
                     }
-                },
-            )
-        },
-    ) { innerPadding ->
-        content(innerPadding)
+                }
+            }
+        }
     }
 }

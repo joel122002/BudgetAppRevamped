@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
                                         animationSpec = tween(300)
                                     )
                                 }) {
-                                MainComposable(
+                                AppBar(
                                     application = application,
                                     lifecycleScope = lifecycleScope
                                 )

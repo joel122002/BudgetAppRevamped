@@ -68,6 +68,8 @@ class BudgetItemRepository(
     }
 
     suspend fun delete(budgetItem: BudgetItem) {
-        budgetItemDao.delete(budgetItem)
+        withContext(Dispatchers.IO) {
+            budgetItemDao.delete(budgetItem)
+        }
     }
 }

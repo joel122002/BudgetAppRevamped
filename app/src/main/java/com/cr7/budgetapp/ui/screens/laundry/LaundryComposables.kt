@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Paint
 import android.util.DisplayMetrics
 import android.util.TypedValue
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -41,6 +41,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -57,12 +58,13 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.cr7.budgetapp.data.local.BudgetItem
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cr7.budgetapp.data.local.LaundryItem
+import com.cr7.budgetapp.ui.screens.helpers.LocalApplication
 import com.cr7.budgetapp.ui.screens.helpers.getCurrentMonth
 import com.cr7.budgetapp.ui.screens.helpers.getCurrentYear
 import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfCurrentMonthAtMidnight
@@ -70,6 +72,7 @@ import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfMonth
 import com.cr7.budgetapp.ui.screens.helpers.getLastDayOfMonth
 import com.cr7.budgetapp.ui.screens.helpers.getMidnight
 import com.cr7.budgetapp.ui.screens.helpers.getTomorrowAtMidnight
+import com.cr7.budgetapp.ui.viewmodel.LaundryItemViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -100,6 +103,10 @@ fun LaundryScreen() {
         mutableStateOf(getTomorrowAtMidnight())
     }
 
+    var updatedItem by remember {
+        mutableStateOf<LaundryItem?>(null)
+    }
+
     var total by remember {
         mutableStateOf(0)
     }
@@ -107,14 +114,29 @@ fun LaundryScreen() {
     var isRefreshing by remember {
         mutableStateOf(false)
     }
+    val application = LocalApplication.current
+    val laundryItemViewModel = viewModel{
+        LaundryItemViewModel(application)
+    }
 
     val coroutineScope = rememberCoroutineScope()
+    val laundryItems = laundryItemViewModel.laundryItems.collectAsState(initial = emptyList()).value
 
     LaunchedEffect(month, year) {
         start = getMidnight(getFirstDayOfMonth(month, year))
         end = getLastDayOfMonth(start)
     }
 
+    LaunchedEffect(start, end) {
+        laundryItemViewModel.changeDate(start, end)
+    }
+
+    LaunchedEffect(laundryItems) {
+        total = 0
+        laundryItems.forEach {
+            total += it.items
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -155,7 +177,7 @@ fun LaundryScreen() {
             onRefresh = {
                 coroutineScope.launch {
                     isRefreshing = true
-//                    budgetItemViewModel.refreshData()
+                    laundryItemViewModel.refreshData()
                     isRefreshing = false
                 }
             },
@@ -167,20 +189,19 @@ fun LaundryScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                item {
-                    val dateMills = Date().toInstant().toEpochMilli()
+                items(laundryItems) {laundryItem ->
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.fillMaxWidth(0.5f)) {
-                            Text(text = "Some date")
+                            Text(text = SimpleDateFormat("dd/MM/yyyy").format(laundryItem.date))
                         }
                         Box(modifier = Modifier.weight(1f)) {
-                            Text(text = "24")
+                            Text(text = "${laundryItem.items}")
                         }
 
-                        Button(onClick = { /*updatedItem = budgetItem*/ }) {
+                        Button(onClick = { updatedItem = laundryItem }) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit item"
@@ -191,23 +212,27 @@ fun LaundryScreen() {
             }
         }
 
-        if (false) {
+        if (updatedItem != null) {
             EditItemDialog(
-                onDismissRequest = {  },
-                onConfirmation = { })
+                item = updatedItem!!,
+                onDismissRequest = { updatedItem = null },
+                onConfirmation = { laundryItemViewModel.insert(it)
+                updatedItem = null})
         }
 
-        NewLaundryForm()
+        NewLaundryForm(laundryItemViewModel = laundryItemViewModel)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditItemDialog( onDismissRequest: () -> Unit,
-    onConfirmation: () -> Unit,
+fun EditItemDialog(
+    item: LaundryItem,
+    onDismissRequest: () -> Unit,
+    onConfirmation: (item: LaundryItem) -> Unit,
 ) {
     var items by remember {
-        mutableStateOf("")
+        mutableStateOf(item.items.toString())
     }
 
     var datePickerOpen by remember {
@@ -215,7 +240,7 @@ fun EditItemDialog( onDismissRequest: () -> Unit,
     }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = Date().toInstant().toEpochMilli(),
+        initialSelectedDateMillis = item.date.toInstant().toEpochMilli(),
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
                 return utcTimeMillis < Date().toInstant().toEpochMilli()
@@ -268,7 +293,7 @@ fun EditItemDialog( onDismissRequest: () -> Unit,
 
                     Box() {
                         OutlinedTextField(
-                            value = items,
+                            value = items.toString(),
                             {
                                 if (it.isEmpty() || it.matches(numberPattern))
                                     items = it
@@ -291,7 +316,10 @@ fun EditItemDialog( onDismissRequest: () -> Unit,
                     }
                     TextButton(
                         onClick = {
-                            onConfirmation()
+                            item.updatedAt = Date()
+                            item.date = Date(datePickerState.selectedDateMillis!!)
+                            item.items = items.toInt()
+                            onConfirmation(item)
                         },
                         modifier = Modifier.padding(8.dp),
                     ) {
@@ -308,6 +336,7 @@ fun EditItemDialog( onDismissRequest: () -> Unit,
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewLaundryForm(
+    laundryItemViewModel: LaundryItemViewModel
 ) {
     var items by remember {
         mutableStateOf("")
@@ -375,6 +404,9 @@ fun NewLaundryForm(
             val userDocRef =
                 Firebase.firestore.collection("users").document(Firebase.auth.currentUser?.uid!!)
             val date = Date(datePickerState.selectedDateMillis!!)
+            val currentTime = Date()
+            val laundryItem = LaundryItem(currentTime, currentTime, date, items.toInt(), userDocRef, false)
+            laundryItemViewModel.insert(laundryItem)
             items = ""
             focusManager.clearFocus()
         }) {

@@ -75,10 +75,16 @@ class FirebaseService {
             .document(budgetItem.uid).set(budgetItem)
     }
 
-    fun insertLaundryItem(laundryItem: LaundryItem) {
-        val user = FirebaseAuthenticatedUser.firebaseUserState.value!!
-        val a = db.collection("users").document(user.uid)
+    suspend fun insertLaundryItem(laundryItem: LaundryItem) {
         db.collection("rooms").document(ROOM).collection("laundry")
-            .document(laundryItem.uid).set(laundryItem)
+            .document(laundryItem.uid).set(laundryItem).await()
+    }
+
+    suspend fun deleteBudgetItem(budgetItem: BudgetItem) {
+        db.collection("rooms").document(ROOM).collection("budget").document(budgetItem.uid).delete().await()
+    }
+
+    suspend fun deleteLaundryItem(laundryItem: LaundryItem) {
+        db.collection("rooms").document(ROOM).collection("laundry").document(laundryItem.uid).delete().await()
     }
 }

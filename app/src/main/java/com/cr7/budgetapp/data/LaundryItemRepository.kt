@@ -2,7 +2,11 @@ package com.cr7.budgetapp.data
 
 import com.cr7.budgetapp.data.local.LaundryItem
 import com.cr7.budgetapp.data.local.LaundryItemDao
+import com.cr7.budgetapp.data.remote.FirebaseAuthenticatedUser
 import com.cr7.budgetapp.data.remote.FirebaseService
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -44,6 +48,8 @@ class LaundryItemRepository(private val laundryItemDao: LaundryItemDao) {
             val unsyncedItems = laundryItemDao.getUnsyncedItems()
             unsyncedItems.forEach { laundryItem ->
                 laundryItem.sync = true
+                laundryItem.userDoc =
+                    Firebase.firestore.collection("users").document(Firebase.auth.currentUser?.uid!!)
                 firebaseService.insertLaundryItem(laundryItem)
                 laundryItemDao.insert(laundryItem)
             }

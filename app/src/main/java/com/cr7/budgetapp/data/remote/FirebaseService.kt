@@ -4,6 +4,7 @@ import android.util.Log
 import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.data.local.LaundryItem
 import com.cr7.budgetapp.data.local.User
+import com.cr7.budgetapp.BuildConfig
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
@@ -13,7 +14,7 @@ import java.util.Date
 
 val TAG = "FirebaseService"
 
-const val ROOM = "n5bhChnZ12uLmsPlmMMt"
+const val ROOM = BuildConfig.ROOM_NAME
 class FirebaseService {
     val db = Firebase.firestore
 

@@ -61,6 +61,7 @@ class LaundryItemRepository(private val laundryItemDao: LaundryItemDao) {
 
     suspend fun delete(laundryItem: LaundryItem) {
         withContext(Dispatchers.IO) {
+            firebaseService.deleteLaundryItem(laundryItem)
             laundryItemDao.delete(laundryItem)
         }
     }

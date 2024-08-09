@@ -69,6 +69,7 @@ class BudgetItemRepository(
 
     suspend fun delete(budgetItem: BudgetItem) {
         withContext(Dispatchers.IO) {
+            firebaseService.deleteBudgetItem(budgetItem)
             budgetItemDao.delete(budgetItem)
         }
     }

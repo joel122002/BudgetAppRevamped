@@ -48,6 +48,12 @@ class LaundryItemViewModel(application: Application): AndroidViewModel(applicati
         }
     }
 
+    fun delete(laundryItem: LaundryItem) {
+        viewModelScope.launch {
+            laundryItemRepository.delete(laundryItem)
+        }
+    }
+
     suspend fun refreshData() {
         laundryItemRepository.refreshData(start, end)
     }

@@ -64,6 +64,12 @@ class BudgetItemViewModel(application: Application): AndroidViewModel(applicatio
         }
     }
 
+    fun delete(budgetItem: BudgetItem) {
+        viewModelScope.launch {
+            budgetItemRepository.delete(budgetItem)
+        }
+    }
+
     suspend fun refreshData() {
         budgetItemRepository.refreshData(start, end)
     }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Check
@@ -115,6 +116,11 @@ fun MainComposable(
     var updatedItem by remember {
         mutableStateOf<BudgetItem?>(null)
     }
+
+    var deletedItem by remember {
+        mutableStateOf<BudgetItem?>(null)
+    }
+
     var isRefreshing by remember {
         mutableStateOf(false)
     }
@@ -231,17 +237,22 @@ fun MainComposable(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(modifier = Modifier.fillMaxWidth(0.5f)) {
+                                Box(modifier = Modifier.weight(1f)) {
                                     Text(text = budgetItem.name)
                                 }
-                                Box(modifier = Modifier.weight(1f)) {
+                                Box() {
                                     Text(text = "${budgetItem.price}")
                                 }
-
                                 Button(onClick = { updatedItem = budgetItem }) {
                                     Icon(
                                         imageVector = Icons.Default.Edit,
                                         contentDescription = "Edit item"
+                                    )
+                                }
+                                Button(onClick = { deletedItem = budgetItem }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete Item"
                                     )
                                 }
                             }
@@ -258,6 +269,16 @@ fun MainComposable(
 
                         budgetItemViewModel.insert(budgetItem = budgetItem)
                         updatedItem = null
+                    })
+            }
+
+            if (deletedItem != null) {
+                DeleteItemDialog(
+                    deletedItem!!,
+                    onDismissRequest = { deletedItem = null },
+                    onConfirmation = { budgetItem ->
+                        budgetItemViewModel.delete(budgetItem = deletedItem!!)
+                        deletedItem = null
                     })
             }
 
@@ -353,6 +374,59 @@ fun NewItemForm(
                 imageVector = Icons.Outlined.Check,
                 contentDescription = "Add"
             )
+        }
+    }
+}
+
+@Composable
+fun DeleteItemDialog(
+    budgetItem: BudgetItem, onDismissRequest: () -> Unit,
+    onConfirmation: (budgetItem: BudgetItem) -> Unit,
+) {
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                Text(
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    text = "Delete Item",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Are you sure you want to delete this item?")
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(
+                        onClick = { onDismissRequest() },
+                    ) {
+                        Text("Dismiss")
+                    }
+                    TextButton(
+                        onClick = {
+                            onConfirmation(budgetItem)
+                        },
+                    ) {
+                        Text("Confirm")
+                    }
+                }
+            }
         }
     }
 }

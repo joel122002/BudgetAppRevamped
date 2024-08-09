@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DateRange
@@ -63,6 +64,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.data.local.LaundryItem
 import com.cr7.budgetapp.ui.screens.helpers.LocalApplication
 import com.cr7.budgetapp.ui.screens.helpers.getCurrentMonth
@@ -72,6 +74,7 @@ import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfMonth
 import com.cr7.budgetapp.ui.screens.helpers.getLastDayOfMonth
 import com.cr7.budgetapp.ui.screens.helpers.getMidnight
 import com.cr7.budgetapp.ui.screens.helpers.getTomorrowAtMidnight
+import com.cr7.budgetapp.ui.screens.main.DeleteItemDialog
 import com.cr7.budgetapp.ui.viewmodel.LaundryItemViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -104,6 +107,10 @@ fun LaundryScreen() {
     }
 
     var updatedItem by remember {
+        mutableStateOf<LaundryItem?>(null)
+    }
+
+    var deletedItem by remember {
         mutableStateOf<LaundryItem?>(null)
     }
 
@@ -194,10 +201,10 @@ fun LaundryScreen() {
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(modifier = Modifier.fillMaxWidth(0.5f)) {
+                        Box(modifier = Modifier.weight(1f)) {
                             Text(text = SimpleDateFormat("dd/MM/yyyy").format(laundryItem.date))
                         }
-                        Box(modifier = Modifier.weight(1f)) {
+                        Box() {
                             Text(text = "${laundryItem.items}")
                         }
 
@@ -205,6 +212,12 @@ fun LaundryScreen() {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit item"
+                            )
+                        }
+                        Button(onClick = { deletedItem = laundryItem }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete Item"
                             )
                         }
                     }
@@ -219,8 +232,72 @@ fun LaundryScreen() {
                 onConfirmation = { laundryItemViewModel.insert(it)
                 updatedItem = null})
         }
+        if (deletedItem != null) {
+            DeleteItemDialog(
+                deletedItem!!,
+                onDismissRequest = { deletedItem = null },
+                onConfirmation = { budgetItem ->
+                    laundryItemViewModel.delete(laundryItem = deletedItem!!)
+                    deletedItem = null
+                })
+        }
 
         NewLaundryForm(laundryItemViewModel = laundryItemViewModel)
+    }
+}
+
+
+
+@Composable
+fun DeleteItemDialog(
+    laundryItem: LaundryItem, onDismissRequest: () -> Unit,
+    onConfirmation: (laundryItem: LaundryItem) -> Unit,
+) {
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                Text(
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    text = "Delete Item",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Are you sure you want to delete this item?")
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(
+                        onClick = { onDismissRequest() },
+                    ) {
+                        Text("Dismiss")
+                    }
+                    TextButton(
+                        onClick = {
+                            onConfirmation(laundryItem)
+                        },
+                    ) {
+                        Text("Confirm")
+                    }
+                }
+            }
+        }
     }
 }
 

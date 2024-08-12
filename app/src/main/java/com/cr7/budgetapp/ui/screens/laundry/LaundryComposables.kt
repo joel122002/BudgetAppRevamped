@@ -472,6 +472,7 @@ fun NewLaundryForm(
                         items = it
                 },
                 label = { Text("Price") },
+                singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
         }

@@ -335,6 +335,7 @@ fun NewItemForm(
             OutlinedTextField(
                 value = itemName,
                 onValueChange = { itemName = it },
+                singleLine = true,
                 label = { Text("Item") },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
@@ -347,6 +348,7 @@ fun NewItemForm(
                     if (it.isEmpty() || it.matches(numberPattern))
                         price = it
                 },
+                singleLine = true,
                 label = { Text("Price") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
@@ -472,6 +474,7 @@ fun EditItemDialog(
                             value = itemName,
                             onValueChange = { itemName = it },
                             label = { Text("Item") },
+                            singleLine = true,
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                         )
                     }
@@ -483,6 +486,7 @@ fun EditItemDialog(
                                 if (it.isEmpty() || it.matches(numberPattern))
                                     price = it
                             },
+                            singleLine = true,
                             label = { Text("Price") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )

@@ -45,6 +45,7 @@ fun DetailsScreen(authViewModel: AuthViewModel) {
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
+                    singleLine = true,
                     label = { Text("Username") })
                 Button(onClick = {
                     coroutineScope.launch {

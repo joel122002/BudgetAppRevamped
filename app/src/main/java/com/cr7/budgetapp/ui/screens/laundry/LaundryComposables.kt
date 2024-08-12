@@ -370,7 +370,7 @@ fun EditItemDialog(
 
                     Box() {
                         OutlinedTextField(
-                            value = items.toString(),
+                            value = items,
                             {
                                 if (it.isEmpty() || it.matches(numberPattern))
                                     items = it

@@ -502,7 +502,7 @@ fun EditItemDialog(
                     TextButton(
                         onClick = {
                             budgetItem.price = price.toFloat()
-                            budgetItem.name = itemName
+                            budgetItem.name = itemName.trim()
                             budgetItem.sync = false
 
                             onConfirmation(budgetItem)

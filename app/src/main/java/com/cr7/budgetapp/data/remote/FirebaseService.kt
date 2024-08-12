@@ -88,4 +88,11 @@ class FirebaseService {
     suspend fun deleteLaundryItem(laundryItem: LaundryItem) {
         db.collection("rooms").document(ROOM).collection("laundry").document(laundryItem.uid).delete().await()
     }
+
+    suspend fun resolveUsername(user: User): User {
+        val query = db.document(user.path)
+        val result = query.get().await()
+        user.username = result.data!!.get("username").toString()
+        return user
+    }
 }

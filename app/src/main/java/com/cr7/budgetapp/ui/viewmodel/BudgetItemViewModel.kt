@@ -13,8 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Date
-
-val TAG = "BudgetItemViewModel"
 class BudgetItemViewModel(application: Application): AndroidViewModel(application) {
     private val budgetItemRepository: BudgetItemRepository
     private val _budgetItems = MutableStateFlow<List<BudgetItem>>(emptyList())

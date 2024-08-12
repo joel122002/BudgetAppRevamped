@@ -8,11 +8,12 @@ import androidx.room.TypeConverters
 import com.cr7.budgetapp.data.local.helper.Converters
 
 
-@Database(entities = [BudgetItem::class, LaundryItem::class], version = 2, exportSchema = false)
+@Database(entities = [BudgetItem::class, LaundryItem::class, User::class], version = 1, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase: RoomDatabase() {
     abstract fun budgetItemDao(): BudgetItemDao
     abstract fun laundryItemDao(): LaundryItemDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

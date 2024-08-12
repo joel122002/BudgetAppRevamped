@@ -49,7 +49,8 @@ fun DetailsScreen(authViewModel: AuthViewModel) {
                     label = { Text("Username") })
                 Button(onClick = {
                     coroutineScope.launch {
-                        val user = User(username.trim())
+                        val user = User()
+                        user.username = username.trim()
                         authViewModel.setUserDoc(user)
                     }
                 }) {

@@ -4,6 +4,10 @@ import android.content.Context
 import android.graphics.Paint
 import android.util.DisplayMetrics
 import android.util.TypedValue
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +31,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
@@ -59,6 +64,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
@@ -118,6 +124,13 @@ fun LaundryScreen() {
         mutableStateOf(0)
     }
 
+    val totalAnim by animateIntAsState(
+        targetValue = total, animationSpec = tween(
+            durationMillis = 1000,
+            easing = FastOutSlowInEasing
+        ), label = "Day's total"
+    )
+
     var isRefreshing by remember {
         mutableStateOf(false)
     }
@@ -170,14 +183,37 @@ fun LaundryScreen() {
                 datePickerOpen = false
             })
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End
         ) {
-            Text(
-                text = "Total: $total"
-            )
-
+            Card(
+                colors = CardColors(
+                    contentColor = MaterialTheme.colorScheme.primaryContainer,
+                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    disabledContentColor = MaterialTheme.colorScheme.primaryContainer,
+                    disabledContainerColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp, 42.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Total",
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = "$totalAnim",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -190,7 +226,7 @@ fun LaundryScreen() {
             },
             modifier = Modifier
                 .weight(1f, true)
-                .fillMaxWidth(),
+                .fillMaxWidth().padding(top = 12.dp),
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),

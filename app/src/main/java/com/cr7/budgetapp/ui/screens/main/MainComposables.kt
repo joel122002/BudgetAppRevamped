@@ -2,6 +2,8 @@ package com.cr7.budgetapp.ui.screens.main
 
 import android.app.Application
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
@@ -60,9 +63,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -128,6 +134,13 @@ fun MainComposable(
     var totalPrice by remember {
         mutableStateOf(0f)
     }
+
+    val totalPriceAnim by animateFloatAsState(
+        targetValue = totalPrice, animationSpec = tween(
+            durationMillis = 1000,
+            easing = FastOutSlowInEasing
+        ), label = "Day's total"
+    )
 
 
     val selectedDateMills = datePickerState.selectedDateMillis!!
@@ -203,14 +216,37 @@ fun MainComposable(
 
             }
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End
             ) {
-                Text(
-                    text = "Total: $totalPrice"
-                )
-
+                Card(
+                    colors = CardColors(
+                        contentColor = MaterialTheme.colorScheme.primaryContainer,
+                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        disabledContentColor = MaterialTheme.colorScheme.primaryContainer,
+                        disabledContainerColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp, 42.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Total",
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            text = "%.0f".format(totalPriceAnim),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
             }
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
@@ -223,7 +259,7 @@ fun MainComposable(
                 },
                 modifier = Modifier
                     .weight(1f, true)
-                    .fillMaxWidth(),
+                    .fillMaxWidth().padding(top = 12.dp),
             ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
@@ -241,7 +277,7 @@ fun MainComposable(
                                     Text(text = budgetItem.name)
                                 }
                                 Box() {
-                                    Text(text = "${budgetItem.price}")
+                                    Text(text = "%.0f".format(budgetItem.price))
                                 }
                                 Button(onClick = { updatedItem = budgetItem }) {
                                     Icon(

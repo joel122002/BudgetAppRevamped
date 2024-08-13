@@ -1,9 +1,11 @@
 package com.cr7.budgetapp.ui.screens.helpers
 
+import android.app.Activity
 import android.app.Application
 import android.app.DownloadManager
 import android.content.ContentValues
 import android.content.Context
+import android.content.ContextWrapper
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -201,4 +203,14 @@ suspend fun createAllUserCSV(
             legacySaveToDownloads(uri, application, filename)
         }
     }
+}
+
+fun Context.getActivityOrNull(): Activity? {
+    var context = this
+    while (context is ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+
+    return null
 }

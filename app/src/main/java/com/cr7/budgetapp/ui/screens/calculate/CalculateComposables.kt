@@ -1,5 +1,6 @@
 package com.cr7.budgetapp.ui.screens.calculate
 
+import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -43,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,6 +55,7 @@ import com.cr7.budgetapp.R
 import com.cr7.budgetapp.ui.screens.helpers.LocalApplication
 import com.cr7.budgetapp.ui.screens.helpers.createAllUserCSV
 import com.cr7.budgetapp.ui.screens.helpers.createCurrentUserCSV
+import com.cr7.budgetapp.ui.screens.helpers.getActivityOrNull
 import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfCurrentMonthAtMidnight
 import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfNextMonth
 import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfPreviousMonth
@@ -111,6 +114,8 @@ fun CalculateScreen() {
         ), label = "Current user total"
     )
 
+    val activity = LocalContext.current.getActivityOrNull()
+
     val items = budgetItemViewModel.allUsersBudgetItems.collectAsState(emptyList()).value
     val userMap = userViewModel.usersAsHashmap.collectAsState(emptyMap()).value
     val coroutineScope = rememberCoroutineScope()
@@ -168,7 +173,12 @@ fun CalculateScreen() {
                                     .weight(1f)
                                     .padding(12.dp)
                                     .clickable {
+
                                         coroutineScope.launch {
+                                            activity?.runOnUiThread{
+                                                Toast.makeText(activity, "Download started", Toast.LENGTH_SHORT)
+                                                    .show()
+                                            }
                                             createCurrentUserCSV(
                                                 start,
                                                 end,
@@ -178,6 +188,12 @@ fun CalculateScreen() {
                                                 authViewModel,
                                                 application
                                             )
+                                            activity?.runOnUiThread{
+                                                Toast.makeText(activity,
+                                                    "Download complete. Check Downloads folder.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
                                         }
                                     }, title = "Current User", expense = totalAnim
                             )
@@ -186,6 +202,10 @@ fun CalculateScreen() {
                                     .weight(1f)
                                     .padding(12.dp).clickable {
                                         coroutineScope.launch {
+                                            activity?.runOnUiThread{
+                                                Toast.makeText(activity, "Download started", Toast.LENGTH_SHORT)
+                                                    .show()
+                                            }
                                             createAllUserCSV(
                                                 start,
                                                 end,
@@ -194,6 +214,12 @@ fun CalculateScreen() {
                                                 userViewModel,
                                                 application
                                             )
+                                            activity?.runOnUiThread{
+                                                Toast.makeText(activity,
+                                                    "Download complete. Check Downloads folder.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
                                         }
                                     }, title = "All Users", expense = totalAllAnim
                             )

@@ -126,4 +126,5 @@ dependencies {
 
     // Serialization library
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.1")
+    implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
 }

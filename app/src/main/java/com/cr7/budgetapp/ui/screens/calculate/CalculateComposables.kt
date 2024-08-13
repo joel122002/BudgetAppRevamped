@@ -3,6 +3,7 @@ package com.cr7.budgetapp.ui.screens.calculate
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,9 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,13 +48,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cr7.budgetapp.R
-import com.cr7.budgetapp.data.remote.FirebaseAuthenticatedUser
-import com.cr7.budgetapp.data.remote.FirebaseService
 import com.cr7.budgetapp.ui.screens.helpers.LocalApplication
-import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
+import com.cr7.budgetapp.ui.screens.helpers.createAllUserCSV
+import com.cr7.budgetapp.ui.screens.helpers.createCurrentUserCSV
 import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfCurrentMonthAtMidnight
 import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfNextMonth
 import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfPreviousMonth
@@ -64,6 +62,8 @@ import com.cr7.budgetapp.ui.screens.helpers.getTomorrowAtMidnight
 import com.cr7.budgetapp.ui.theme.BudgetAppTheme
 import com.cr7.budgetapp.ui.viewmodel.AuthViewModel
 import com.cr7.budgetapp.ui.viewmodel.BudgetItemViewModel
+import com.cr7.budgetapp.ui.viewmodel.UserViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.util.Date
@@ -73,6 +73,9 @@ fun CalculateScreen() {
     val application = LocalApplication.current
     val budgetItemViewModel = viewModel {
         BudgetItemViewModel(application)
+    }
+    val userViewModel = viewModel {
+        UserViewModel(application)
     }
     val authViewModel = viewModel {
         AuthViewModel()
@@ -92,20 +95,28 @@ fun CalculateScreen() {
     var totalAll by remember {
         mutableStateOf(0f)
     }
-    val totalAllAnim by animateFloatAsState(targetValue = totalAll, animationSpec = tween(
-        durationMillis = 1000,
-        easing = FastOutSlowInEasing
-    ))
+    val totalAllAnim by animateFloatAsState(
+        targetValue = totalAll, animationSpec = tween(
+            durationMillis = 1000,
+            easing = FastOutSlowInEasing
+        ), label = "All users total"
+    )
     var total by remember {
         mutableStateOf(0f)
     }
-    val totalAnim by animateFloatAsState(targetValue = total, animationSpec = tween(
-        durationMillis = 1000,
-        easing = FastOutSlowInEasing
-    ))
-    val items = budgetItemViewModel.allUsersBudgetItems.collectAsState(emptyList())
-    LaunchedEffect(items.value) {
-        items.value.forEach { budgetItem ->
+    val totalAnim by animateFloatAsState(
+        targetValue = total, animationSpec = tween(
+            durationMillis = 1000,
+            easing = FastOutSlowInEasing
+        ), label = "Current user total"
+    )
+
+    val items = budgetItemViewModel.allUsersBudgetItems.collectAsState(emptyList()).value
+    val userMap = userViewModel.usersAsHashmap.collectAsState(emptyMap()).value
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(items) {
+        items.forEach { budgetItem ->
             if (budgetItem.userDoc != null && budgetItem.userDoc!!.path == authViewModel.getUserDocumentRef().path) {
                 total += budgetItem.price
             }
@@ -124,25 +135,68 @@ fun CalculateScreen() {
             color = MaterialTheme.colorScheme.background
         ) {
             AppBar {
-                Column(modifier = Modifier
-                    .padding(it)
-                    .padding(12.dp)
-                    .fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+                Column(
+                    modifier = Modifier
+                        .padding(it)
+                        .padding(12.dp)
+                        .fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween
+                ) {
                     Column(Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             FloatingActionButton(onClick = { datePickerIsOpen = true }) {
-                                Icon(imageVector = ImageVector.vectorResource(id = R.drawable.ic_calculator_range), contentDescription = "Start Date")
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_calculator_range),
+                                    contentDescription = "Start Date"
+                                )
                             }
-                            Text(text = "${SimpleDateFormat(" d MMM yyyy ").format(start)} - ${SimpleDateFormat(" d MMM yyyy ").format(end)}")
+                            Text(
+                                text = "${SimpleDateFormat(" d MMM yyyy ").format(start)} - ${
+                                    SimpleDateFormat(
+                                        " d MMM yyyy "
+                                    ).format(end)
+                                }"
+                            )
 
                         }
                         Row(Modifier.fillMaxWidth()) {
-                            ExpenseCard(modifier = Modifier
-                                .weight(1f)
-                                .padding(12.dp), title = "Current User", expense = totalAnim)
-                            ExpenseCard(modifier = Modifier
-                                .weight(1f)
-                                .padding(12.dp), title = "All Users", expense = totalAllAnim)
+                            ExpenseCard(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(12.dp)
+                                    .clickable {
+                                        coroutineScope.launch {
+                                            createCurrentUserCSV(
+                                                start,
+                                                end,
+                                                userMap,
+                                                items,
+                                                userViewModel,
+                                                authViewModel,
+                                                application
+                                            )
+                                        }
+                                    }, title = "Current User", expense = totalAnim
+                            )
+                            ExpenseCard(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(12.dp).clickable {
+                                        coroutineScope.launch {
+                                            createAllUserCSV(
+                                                start,
+                                                end,
+                                                userMap,
+                                                items,
+                                                userViewModel,
+                                                application
+                                            )
+                                        }
+                                    }, title = "All Users", expense = totalAllAnim
+                            )
                         }
 
                         DateRangePickerModal(
@@ -154,21 +208,31 @@ fun CalculateScreen() {
                                     start = Date(it.first!!)
                                     end = Date(it.second!!)
                                 }
-                                datePickerIsOpen = false },
+                                datePickerIsOpen = false
+                            },
                             onDismiss = { datePickerIsOpen = false })
                     }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        FloatingActionButton(onClick = { start = getMidnight(getFirstDayOfPreviousMonth(start))
-                        end = getMidnight(getLastDayOfMonth(start))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        FloatingActionButton(onClick = {
+                            start = getMidnight(getFirstDayOfPreviousMonth(start))
+                            end = getMidnight(getLastDayOfMonth(start))
                         }) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Start Date")
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = "Previous month"
+                            )
                         }
-                        FloatingActionButton(onClick = { datePickerIsOpen = true }) {
-                            Icon(imageVector = ImageVector.vectorResource(id = R.drawable.ic_download), contentDescription = "Start Date")
-                        }
-                        FloatingActionButton(onClick = { start = getMidnight(getFirstDayOfNextMonth(start))
-                            end = getMidnight(getLastDayOfMonth(start)) }) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Start Date")
+                        FloatingActionButton(onClick = {
+                            start = getMidnight(getFirstDayOfNextMonth(start))
+                            end = getMidnight(getLastDayOfMonth(start))
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Next month"
+                            )
                         }
                     }
                 }
@@ -178,19 +242,28 @@ fun CalculateScreen() {
 }
 
 @Composable
-fun ExpenseCard(modifier: Modifier,title: String, expense: Float) {
+fun ExpenseCard(modifier: Modifier, title: String, expense: Float) {
     ElevatedCard(
         elevation = CardDefaults.cardElevation(
             defaultElevation = 6.dp
         ),
-        colors = CardColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer, disabledContainerColor = MaterialTheme.colorScheme.onSurface, disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer),
+        colors = CardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.onSurface,
+            disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
         modifier = modifier,
     ) {
-        Column( modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp, 42.dp),horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp, 42.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
-                text = "All users",
+                text = title,
                 textAlign = TextAlign.Center,
             )
             Text(
@@ -270,31 +343,7 @@ fun DateRangePickerModal(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomDatePickerDialog(
-    open: Boolean,
-    updateOpen: (Boolean) -> Unit,
-    datePickerState: DatePickerState
-) {
-    if (open) {
-        DatePickerDialog(
-            onDismissRequest = { },
-            confirmButton = {
-                TextButton(onClick = {
-                    updateOpen(false)
-                }) { Text(text = "Done") }
-            },
-            content = { DatePicker(state = datePickerState) }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 fun AppBar(content: @Composable() (innerPadding: PaddingValues) -> Unit) {
-    var dropdownOpen by remember {
-        mutableStateOf(false)
-    }
-    val navController = LocalNavController.current
     Scaffold(
         topBar = {
             TopAppBar(
@@ -304,8 +353,6 @@ fun AppBar(content: @Composable() (innerPadding: PaddingValues) -> Unit) {
                 ),
                 title = {
                     Text("Monthly calculation")
-                },
-                actions = {
                 },
             )
         },

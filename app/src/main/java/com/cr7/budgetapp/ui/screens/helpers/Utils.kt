@@ -211,6 +211,13 @@ fun Context.getActivityOrNull(): Activity? {
         if (context is Activity) return context
         context = context.baseContext
     }
-
     return null
+}
+
+fun isValidItemName(itemName: String): Boolean {
+    return !itemName.isBlank()
+}
+
+fun isValidPrice(price: String): Boolean {
+    return price.isBlank()
 }

@@ -81,6 +81,8 @@ import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.ui.screens.helpers.LocalAuthViewModel
 import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
 import com.cr7.budgetapp.ui.screens.helpers.Routes
+import com.cr7.budgetapp.ui.screens.helpers.isValidItemName
+import com.cr7.budgetapp.ui.screens.helpers.isValidPrice
 import com.cr7.budgetapp.ui.screens.laundry.LaundryScreen
 import com.cr7.budgetapp.ui.theme.BudgetAppTheme
 import com.cr7.budgetapp.ui.viewmodel.BudgetItemViewModel
@@ -390,6 +392,9 @@ fun NewItemForm(
 
 
         FloatingActionButton(onClick = {
+            if (!isValidItemName(itemName) || !isValidPrice(price)) {
+                return@FloatingActionButton
+            }
             val userDocRef =
                 authViewModel.getUserDocumentRef()
             val budgetItem = BudgetItem(
@@ -539,6 +544,9 @@ fun EditItemDialog(
                     }
                     TextButton(
                         onClick = {
+                            if (!isValidItemName(itemName) || !isValidPrice(price)) {
+                                return@TextButton
+                            }
                             budgetItem.price = price.toFloat()
                             budgetItem.name = itemName.trim()
                             budgetItem.sync = false

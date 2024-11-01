@@ -78,15 +78,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cr7.budgetapp.R
 import com.cr7.budgetapp.data.local.BudgetItem
-import com.cr7.budgetapp.data.remote.FirebaseAuthenticatedUser
+import com.cr7.budgetapp.ui.screens.helpers.LocalAuthViewModel
 import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
 import com.cr7.budgetapp.ui.screens.helpers.Routes
 import com.cr7.budgetapp.ui.screens.laundry.LaundryScreen
 import com.cr7.budgetapp.ui.theme.BudgetAppTheme
 import com.cr7.budgetapp.ui.viewmodel.BudgetItemViewModel
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.ZoneId
@@ -359,6 +356,7 @@ fun NewItemForm(
         mutableStateOf("")
     }
 
+    val authViewModel = LocalAuthViewModel.current
     val focusManager = LocalFocusManager.current
     val numberPattern = remember { Regex("^\\d+\$") }
 
@@ -393,7 +391,7 @@ fun NewItemForm(
 
         FloatingActionButton(onClick = {
             val userDocRef =
-                Firebase.firestore.collection("users").document(Firebase.auth.currentUser?.uid!!)
+                authViewModel.getUserDocumentRef()
             val budgetItem = BudgetItem(
                 createdAt = Date(),
                 updatedAt = Date(),
@@ -571,6 +569,7 @@ fun AppBar(
         mutableStateOf(Routes.budget.route)
     }
     val navController = LocalNavController.current
+    val authViewModel = LocalAuthViewModel.current
     val navControllerLocal = rememberNavController()
     BudgetAppTheme {
         // A surface container using the 'background' color from the theme
@@ -606,7 +605,7 @@ fun AppBar(
                                 onDismissRequest = { dropdownOpen = false },
                             ) {
                                 DropdownMenuItem(onClick = {
-                                    FirebaseAuthenticatedUser.signOut()
+                                    authViewModel.signOut()
                                     dropdownOpen = false
                                 }, text = { Text(text = "Logout") })
                             }

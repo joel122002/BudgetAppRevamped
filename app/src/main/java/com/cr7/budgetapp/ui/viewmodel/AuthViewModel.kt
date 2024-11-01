@@ -32,16 +32,10 @@ class AuthViewModel: ViewModel() {
     }
 
     fun getUserDocumentRef(): DocumentReference {
-        return firebaseService.getUserDocumentRefernce()
+        return firebaseService.getUserDocumentReference(authState.value!!)
     }
     fun signInWithGoogle(idToken: String) {
         FirebaseAuthenticatedUser.signInWithGoogle(idToken)
-    }
-
-    suspend fun getUserDoc(): DocumentSnapshot? {
-        val userDoc = firebaseService.getUserDocument()
-        _userDoc.value = userDoc
-        return userDoc
     }
 
     suspend fun setUserDoc(user: User): DocumentSnapshot {

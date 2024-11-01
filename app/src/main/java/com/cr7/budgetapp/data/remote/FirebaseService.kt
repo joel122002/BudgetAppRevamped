@@ -6,6 +6,7 @@ import com.cr7.budgetapp.data.local.LaundryItem
 import com.cr7.budgetapp.data.local.User
 import com.cr7.budgetapp.BuildConfig
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.firestore
@@ -51,13 +52,18 @@ class FirebaseService {
     suspend fun getUserDocument(): DocumentSnapshot? {
         val user = FirebaseAuthenticatedUser.firebaseUserState.value!!
         val docRef = db.collection("users").document(user.uid)
-        val document = docRef.get().await()
-        return document
+        try {
+            val document = docRef.get().await()
+            return document
+        } catch (e: Exception) {
+            Log.e(TAG, e.message!!)
+            return null
+        }
+
     }
 
-    fun getUserDocumentRefernce(): DocumentReference {
-        val user = FirebaseAuthenticatedUser.firebaseUserState.value!!
-        val docRef = db.collection("users").document(user.uid)
+    fun getUserDocumentReference(firebaseUser: FirebaseUser): DocumentReference {
+        val docRef = db.collection("users").document(firebaseUser.uid)
         return docRef
     }
 

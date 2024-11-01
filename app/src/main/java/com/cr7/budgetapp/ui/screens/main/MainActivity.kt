@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.cr7.budgetapp.ui.screens.DetailsScreen
 import com.cr7.budgetapp.ui.screens.calculate.CalculateScreen
 import com.cr7.budgetapp.ui.screens.helpers.LocalApplication
+import com.cr7.budgetapp.ui.screens.helpers.LocalAuthViewModel
 import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
 import com.cr7.budgetapp.ui.screens.helpers.Routes
 import com.cr7.budgetapp.ui.screens.signin.SignInScreen
@@ -34,17 +35,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             val userState by authViewModel.authState.collectAsState()
             val userDoc by authViewModel.userDoc.collectAsState()
-            LaunchedEffect(userState) {
-                if (userState != null) {
-                    authViewModel.getUserDoc()
-                }
-            }
             if (userState != null) {
                 if (userDoc != null && !userDoc!!.exists()) {
                     DetailsScreen(authViewModel = authViewModel)
                 } else {
                     val navController = rememberNavController()
-                    CompositionLocalProvider(LocalNavController provides navController, LocalApplication provides application) {
+                    CompositionLocalProvider(LocalNavController provides navController, LocalApplication provides application, LocalAuthViewModel provides authViewModel) {
                         NavHost(
                             navController = navController,
                             startDestination = Routes.budget.route

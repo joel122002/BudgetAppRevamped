@@ -81,8 +81,9 @@ import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.ui.screens.helpers.LocalAuthViewModel
 import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
 import com.cr7.budgetapp.ui.screens.helpers.Routes
+import com.cr7.budgetapp.ui.screens.helpers.isValidError
 import com.cr7.budgetapp.ui.screens.helpers.isValidItemName
-import com.cr7.budgetapp.ui.screens.helpers.isValidPrice
+import com.cr7.budgetapp.ui.screens.helpers.isValidNumeric
 import com.cr7.budgetapp.ui.screens.laundry.LaundryScreen
 import com.cr7.budgetapp.ui.theme.BudgetAppTheme
 import com.cr7.budgetapp.ui.viewmodel.BudgetItemViewModel
@@ -354,13 +355,20 @@ fun NewItemForm(
     var itemName by remember {
         mutableStateOf("")
     }
+    var itemNameError by remember {
+        mutableStateOf("")
+    }
     var price by remember {
+        mutableStateOf("")
+    }
+    var priceError by remember {
         mutableStateOf("")
     }
 
     val authViewModel = LocalAuthViewModel.current
     val focusManager = LocalFocusManager.current
     val numberPattern = remember { Regex("^\\d+\$") }
+
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -373,7 +381,16 @@ fun NewItemForm(
                 onValueChange = { itemName = it },
                 singleLine = true,
                 label = { Text("Item") },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                supportingText = {
+                    if (isValidError(itemNameError)) {
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = itemNameError,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
             )
         }
 
@@ -386,13 +403,28 @@ fun NewItemForm(
                 },
                 singleLine = true,
                 label = { Text("Price") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = {
+                    if (isValidError(priceError)) {
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = priceError,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
             )
         }
 
 
         FloatingActionButton(onClick = {
-            if (!isValidItemName(itemName) || !isValidPrice(price)) {
+            if (!isValidNumeric(price)) {
+                priceError = "Invalid price"
+            }
+            if (!isValidItemName(itemName)) {
+                itemNameError = "Invalid item name"
+            }
+            if (!isValidItemName(itemName) || !isValidNumeric(price)) {
                 return@FloatingActionButton
             }
             val userDocRef =
@@ -408,6 +440,8 @@ fun NewItemForm(
             )
             itemName = ""
             price = ""
+            itemNameError = ""
+            priceError = ""
             focusManager.clearFocus()
             budgetItemViewModel.insert(budgetItem = budgetItem)
         }) {
@@ -480,8 +514,14 @@ fun EditItemDialog(
     var itemName by remember {
         mutableStateOf(budgetItem.name)
     }
+    var itemNameError by remember {
+        mutableStateOf("")
+    }
     var price by remember {
         mutableStateOf(budgetItem.price.toString())
+    }
+    var priceError by remember {
+        mutableStateOf("")
     }
 
     val numberPattern = remember { Regex("^\\d+\$") }
@@ -514,7 +554,16 @@ fun EditItemDialog(
                             onValueChange = { itemName = it },
                             label = { Text("Item") },
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                            supportingText = {
+                                if (isValidError(itemNameError)) {
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = itemNameError,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            },
                         )
                     }
 
@@ -527,7 +576,16 @@ fun EditItemDialog(
                             },
                             singleLine = true,
                             label = { Text("Price") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            supportingText = {
+                                if (isValidError(priceError)) {
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = priceError,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            },
                         )
                     }
                 }
@@ -544,7 +602,13 @@ fun EditItemDialog(
                     }
                     TextButton(
                         onClick = {
-                            if (!isValidItemName(itemName) || !isValidPrice(price)) {
+                            if (!isValidNumeric(price)) {
+                                priceError = "Invalid price"
+                            }
+                            if (!isValidItemName(itemName)) {
+                                itemNameError = "Invalid item name"
+                            }
+                            if (!isValidItemName(itemName) || !isValidItemName(price)) {
                                 return@TextButton
                             }
                             budgetItem.price = price.toFloat()

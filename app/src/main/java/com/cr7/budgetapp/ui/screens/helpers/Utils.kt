@@ -218,6 +218,10 @@ fun isValidItemName(itemName: String): Boolean {
     return !itemName.isBlank()
 }
 
-fun isValidPrice(price: String): Boolean {
-    return price.isBlank()
+fun isValidNumeric(numeric: String): Boolean {
+    return !numeric.isBlank()
+}
+
+fun isValidError(error: String): Boolean {
+    return !error.isBlank()
 }

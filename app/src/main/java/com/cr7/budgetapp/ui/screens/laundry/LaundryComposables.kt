@@ -5,7 +5,6 @@ import android.graphics.Paint
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -70,9 +69,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.data.local.LaundryItem
 import com.cr7.budgetapp.ui.screens.helpers.LocalApplication
+import com.cr7.budgetapp.ui.screens.helpers.LocalAuthViewModel
 import com.cr7.budgetapp.ui.screens.helpers.getCurrentMonth
 import com.cr7.budgetapp.ui.screens.helpers.getCurrentYear
 import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfCurrentMonthAtMidnight
@@ -80,7 +79,8 @@ import com.cr7.budgetapp.ui.screens.helpers.getFirstDayOfMonth
 import com.cr7.budgetapp.ui.screens.helpers.getLastDayOfMonth
 import com.cr7.budgetapp.ui.screens.helpers.getMidnight
 import com.cr7.budgetapp.ui.screens.helpers.getTomorrowAtMidnight
-import com.cr7.budgetapp.ui.screens.main.DeleteItemDialog
+import com.cr7.budgetapp.ui.screens.helpers.isValidError
+import com.cr7.budgetapp.ui.screens.helpers.isValidNumeric
 import com.cr7.budgetapp.ui.viewmodel.LaundryItemViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -347,6 +347,9 @@ fun EditItemDialog(
     var items by remember {
         mutableStateOf(item.items.toString())
     }
+    var itemsError by remember {
+        mutableStateOf("")
+    }
 
     var datePickerOpen by remember {
         mutableStateOf(false)
@@ -412,7 +415,16 @@ fun EditItemDialog(
                                     items = it
                             },
                             label = { Text("Items") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            supportingText = {
+                                if (isValidError(itemsError)) {
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = itemsError,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            },
                         )
                     }
                 }
@@ -429,6 +441,10 @@ fun EditItemDialog(
                     }
                     TextButton(
                         onClick = {
+                            if (!isValidNumeric(items)) {
+                                itemsError = "Invalid item count"
+                                return@TextButton
+                            }
                             item.updatedAt = Date()
                             item.date = Date(datePickerState.selectedDateMillis!!)
                             item.items = items.toInt()
@@ -454,6 +470,9 @@ fun NewLaundryForm(
     var items by remember {
         mutableStateOf("")
     }
+    var itemsError by remember {
+        mutableStateOf("")
+    }
 
     var datePickerDialogOpen by remember {
         mutableStateOf(false)
@@ -474,6 +493,7 @@ fun NewLaundryForm(
 
     val focusManager = LocalFocusManager.current
     val numberPattern = remember { Regex("^\\d+\$") }
+    val authViewModel = LocalAuthViewModel.current
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -507,21 +527,33 @@ fun NewLaundryForm(
                     if (it.isEmpty() || it.matches(numberPattern))
                         items = it
                 },
-                label = { Text("Price") },
+                label = { Text("Items") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = {
+                    if (isValidError(itemsError)) {
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = itemsError,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
             )
         }
 
-
         FloatingActionButton(onClick = {
-            val userDocRef =
-                Firebase.firestore.collection("users").document(Firebase.auth.currentUser?.uid!!)
+            if (!isValidNumeric(items)) {
+                itemsError = "Invalid item count"
+                return@FloatingActionButton
+            }
+            val userDocRef = authViewModel.getUserDocumentRef()
             val date = Date(datePickerState.selectedDateMillis!!)
             val currentTime = Date()
             val laundryItem = LaundryItem(currentTime, currentTime, date, items.toInt(), userDocRef, false)
             laundryItemViewModel.insert(laundryItem)
             items = ""
+            itemsError = ""
             focusManager.clearFocus()
         }) {
             Icon(

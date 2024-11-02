@@ -40,9 +40,8 @@ class FirebaseService {
     }
 
     suspend fun getAllBudgetItemsBetweenDate(start: Date, end: Date): List<BudgetItem> {
-        val user = FirebaseAuthenticatedUser.firebaseUserState.value!!
         val docRef = db.collection("rooms").document(ROOM).collection("budget")
-            .whereGreaterThanOrEqualTo("date", start).whereLessThan("date", end)
+            .whereGreaterThanOrEqualTo("date", start).whereLessThanOrEqualTo("date", end)
         val document = docRef.get().await()
         Log.i(TAG, document.toObjects(BudgetItem::class.java).toString())
         return document.toObjects(BudgetItem::class.java)

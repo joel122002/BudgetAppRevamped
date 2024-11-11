@@ -523,6 +523,7 @@ fun EditItemDialog(
     var priceError by remember {
         mutableStateOf("")
     }
+    val authViewModel = LocalAuthViewModel.current
 
     val numberPattern = remember { Regex("^\\d+\$") }
     Dialog(onDismissRequest = { onDismissRequest() }) {
@@ -614,6 +615,7 @@ fun EditItemDialog(
                             budgetItem.price = price.toFloat()
                             budgetItem.name = itemName.trim()
                             budgetItem.sync = false
+                            budgetItem.userDoc = authViewModel.getUserDocumentRef()
 
                             onConfirmation(budgetItem)
                         },

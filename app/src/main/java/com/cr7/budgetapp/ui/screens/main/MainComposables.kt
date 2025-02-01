@@ -5,6 +5,8 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
@@ -61,7 +65,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -81,18 +87,21 @@ import com.cr7.budgetapp.data.local.BudgetItem
 import com.cr7.budgetapp.ui.screens.helpers.LocalAuthViewModel
 import com.cr7.budgetapp.ui.screens.helpers.LocalNavController
 import com.cr7.budgetapp.ui.screens.helpers.Routes
+import com.cr7.budgetapp.ui.screens.helpers.getNextDayAtMidnight
+import com.cr7.budgetapp.ui.screens.helpers.getPreviousDayAtMidnight
 import com.cr7.budgetapp.ui.screens.helpers.isValidError
 import com.cr7.budgetapp.ui.screens.helpers.isValidItemName
 import com.cr7.budgetapp.ui.screens.helpers.isValidNumeric
 import com.cr7.budgetapp.ui.screens.laundry.LaundryScreen
 import com.cr7.budgetapp.ui.theme.BudgetAppTheme
 import com.cr7.budgetapp.ui.viewmodel.BudgetItemViewModel
+import com.google.firebase.installations.Utils
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.util.Date
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainComposable(
     application: Application,
@@ -103,6 +112,9 @@ fun MainComposable(
         BudgetItemViewModel(application)
     }
     val budgetItems = budgetItemViewModel.budgetItems.collectAsState(emptyList()).value
+    var buttonDate by remember {
+        mutableStateOf<Date?>(null)
+    }
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = Date().toInstant().toEpochMilli(),
         selectableDates = object : SelectableDates {
@@ -143,7 +155,8 @@ fun MainComposable(
     )
 
 
-    val selectedDateMills = datePickerState.selectedDateMillis!!
+    val selectedDateMills = if (buttonDate == null)  datePickerState.selectedDateMillis!! else buttonDate!!.time
+    val haptics = LocalHapticFeedback.current
 
     LaunchedEffect(budgetItems) {
         totalPrice = 0f
@@ -199,16 +212,45 @@ fun MainComposable(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
-                FloatingActionButton(onClick = {
-                    isDatePickerOpen = true
-                }) {
-                    Icon(
-                        imageVector = Icons.Outlined.DateRange,
-                        contentDescription = "Date Picker"
-                    )
+                if (buttonDate == null) {
+                    FloatingActionButton(onClick = { isDatePickerOpen = true }) {
+                        Icon(
+                            imageVector = Icons.Outlined.DateRange,
+                            contentDescription = "Date Picker"
+                        )
+                    }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        FloatingActionButton(onClick = { buttonDate = getPreviousDayAtMidnight(buttonDate!!) }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = "Previous day"
+                            )
+                        }
+                        FloatingActionButton(onClick = { buttonDate = getNextDayAtMidnight(buttonDate!!) }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Next day"
+                            )
+                        }
+                    }
                 }
 
                 Text(
+                    modifier = Modifier.combinedClickable (
+                        onClick = {isDatePickerOpen = true},
+                        onLongClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            if (buttonDate == null)
+                                buttonDate = Date(selectedDateMills)
+                            else {
+                                datePickerState.selectedDateMillis = buttonDate!!.toInstant().toEpochMilli()
+                                buttonDate = null
+                            }
+
+
+                        }
+                    ),
                     text = SimpleDateFormat("dd MMMM yyyy (EEEE)").format(
                         Date(selectedDateMills)
                     )
@@ -320,7 +362,7 @@ fun MainComposable(
 
             NewItemForm(
                 budgetItemViewModel = budgetItemViewModel,
-                datePickerState = datePickerState,
+                selectedDateMillis = selectedDateMills,
             )
         }
     }
@@ -350,7 +392,7 @@ fun CustomDatePickerDialog(
 @Composable
 fun NewItemForm(
     budgetItemViewModel: BudgetItemViewModel,
-    datePickerState: DatePickerState,
+    selectedDateMillis: Long,
 ) {
     var itemName by remember {
         mutableStateOf("")
@@ -434,7 +476,7 @@ fun NewItemForm(
                 updatedAt = Date(),
                 name = itemName.trim(),
                 price = price.toFloat(),
-                date = Date(datePickerState.selectedDateMillis!!),
+                date = Date(selectedDateMillis!!),
                 userDoc = userDocRef,
                 sync = false
             )
@@ -518,7 +560,7 @@ fun EditItemDialog(
         mutableStateOf("")
     }
     var price by remember {
-        mutableStateOf(budgetItem.price.toString())
+        mutableStateOf("%.0f".format(budgetItem.price))
     }
     var priceError by remember {
         mutableStateOf("")

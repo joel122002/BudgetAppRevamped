@@ -34,6 +34,24 @@ fun getTomorrowAtMidnight(): Date {
     return Date.from(tomorrowAtMidnight.atZone(ZoneId.of("UTC")).toInstant())
 }
 
+fun getNextDayAtMidnight(date: Date): Date {
+    val tomorrow = date.toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate().plusDays(1)
+    val midnight = LocalTime.MIDNIGHT
+    val tomorrowAtMidnight = LocalDateTime.of(tomorrow, midnight)
+    return Date.from(tomorrowAtMidnight.atZone(ZoneId.of("UTC")).toInstant())
+}
+
+fun getPreviousDayAtMidnight(date: Date): Date {
+    val tomorrow = date.toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate().minusDays(1)
+    val midnight = LocalTime.MIDNIGHT
+    val tomorrowAtMidnight = LocalDateTime.of(tomorrow, midnight)
+    return Date.from(tomorrowAtMidnight.atZone(ZoneId.of("UTC")).toInstant())
+}
+
 fun getFirstDayOfCurrentMonthAtMidnight(): Date {
     val firstDayOfMonth = LocalDate.now().withDayOfMonth(1)
     val midnight = LocalTime.MIDNIGHT
